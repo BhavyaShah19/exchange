@@ -1,0 +1,13 @@
+./engine/node_modules
+./engine/dist
+./engine/snapshot.json
+./engine/coverage
+./db/node_modules
+./db/dist
+./ws/node_modules
+./ws/dist
+./api/node_modules
+./api/dist
+./mm/node_modules
+./mm/dist
+./frontend/node_modules
