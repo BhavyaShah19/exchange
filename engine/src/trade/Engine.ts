@@ -3,7 +3,7 @@
 import { RedisManager } from "../RedisManager";
 import { ORDER_UPDATE, TRADE_ADDED } from "../types";
 import { fromAPI } from "../types/fromAPI";
-import { CANCEL_ORDER, CREATE_ORDER, GET_OPEN_ORDERS } from "../types/toAPI";
+import { CANCEL_ORDER, CREATE_ORDER, GET_DEPTH, GET_OPEN_ORDERS } from "../types/toAPI";
 import { Order, OrderBook, Fill } from "./OrderBook";
 
 interface UserBalance {
@@ -40,7 +40,7 @@ export class Engine {
                     RedisManager.getInstance().sendToApi(clientId, {
                         type: "ORDER_CANCELLED",
                         payload: {
-                            orderId:"",
+                            orderId: "",
                             executedQty: 0,
                             remaningQty: 0
                         }
@@ -49,57 +49,90 @@ export class Engine {
                 break;
             case CANCEL_ORDER:
                 try {
-                    const {orderId,market}=message.data;
-                    const cancelOrderBook=this.orderBooks.find(orderBook=>orderBook.ticker()===market);
-                    const quote=market.split("_")[1];
-                    const base=market.split("_")[0];
-                    if(!cancelOrderBook){
+                    const { orderId, market } = message.data;
+                    const cancelOrderBook = this.orderBooks.find(orderBook => orderBook.ticker() === market);
+                    const quote = market.split("_")[1];
+                    const base = market.split("_")[0];
+                    if (!cancelOrderBook) {
                         throw new Error("OrderBook not found");
                     }
-                    const order=cancelOrderBook.asks.find(order=>order.orderId===orderId) || cancelOrderBook.bids.find(order=>order.orderId===orderId);
+                    const order = cancelOrderBook.asks.find(order => order.orderId === orderId) || cancelOrderBook.bids.find(order => order.orderId === orderId);
 
-                    if(!order){
+                    if (!order) {
                         throw new Error("Order not found");
                     }
-                    if(order.side=="buy"){
-                        const price=cancelOrderBook.cancelBid(order);   
-                        const leftQuantity=(order.quantity-order.filled)*order.price;
+                    if (order.side == "buy") {
+                        const price = cancelOrderBook.cancelBid(order);
+                        const leftQuantity = (order.quantity - order.filled) * order.price;
                         // @ts-ignore
                         //BTC_USDC base_asset_quoteAsset
-                        this.Balance.get(order.userId)[base].available+=leftQuantity;
+                        this.Balance.get(order.userId)[base].available += leftQuantity;
                         // @ts-ignore
-                        this.Balance.get(order.userId)[base].locked-=leftQuantity;
-                        if(price){
-                            this.sendUpdatedDepthAt(price.toString(),market);
+                        this.Balance.get(order.userId)[base].locked -= leftQuantity;
+                        if (price) {
+                            this.sendUpdatedDepthAt(price.toString(), market);
                         }
                     }
-                    else{
-                        const price=cancelOrderBook.cancelAsk(order);   
-                        const leftQuantity=(order.quantity-order.filled)
+                    else {
+                        const price = cancelOrderBook.cancelAsk(order);
+                        const leftQuantity = (order.quantity - order.filled)
                         // @ts-ignore
-                        this.Balance.get(order.userId)[quote].available+=leftQuantity;
+                        this.Balance.get(order.userId)[quote].available += leftQuantity;
                         // @ts-ignore
-                        this.Balance.get(order.userId)[quote].locked-=leftQuantity;
-                        if(price){
-                            this.sendUpdatedDepthAt(price.toString(),market);
+                        this.Balance.get(order.userId)[quote].locked -= leftQuantity;
+                        if (price) {
+                            this.sendUpdatedDepthAt(price.toString(), market);
                         }
                     }
                     RedisManager.getInstance().sendToApi(clientId, {
                         type: "ORDER_CANCELLED",
                         payload: {
                             orderId,
-                            executedQty:0,
+                            executedQty: 0,
                             remaningQty: 0
                         }
                     })
                 } catch (e) {
-                    console.log("Error while cancelling order", );
+                    console.log("Error while cancelling order",);
                     console.log(e);
                 }
                 break;
             case GET_OPEN_ORDERS:
+                try {
+                    const openOrderBook = this.orderBooks.find(orderBook => orderBook.ticker() === message.data.market);
+                    if (!openOrderBook) {
+                        throw new Error("OrderBook not found");
+                    }
+                    const openOrders = openOrderBook.openOrders(message.data.userId);
+                    RedisManager.getInstance().sendToApi(clientId, {
+                        type: "OPEN_ORDERS",
+                        payload: openOrders
+                    })
+                } catch (error) {
+                    console.log(error);
+                }
                 break;
-                
+            case GET_DEPTH:
+                try {
+                    const orderBook = this.orderBooks.find(orderBook => orderBook.ticker() === message.data.market);
+                    if (!orderBook) {
+                        throw new Error("OrderBook not found");
+                    }
+                    RedisManager.getInstance().sendToApi(clientId, {
+                        type: "DEPTH",
+                        payload: orderBook.getDepth()
+                    })
+                } catch (error) {
+                    console.log(error);
+                    RedisManager.getInstance().sendToApi(clientId, {
+                        type: "DEPTH",
+                        payload: {
+                            bids: [],
+                            asks: []
+                        }
+                    });
+                }
+                break;
             default:
                 break;
         }
@@ -288,19 +321,19 @@ export class Engine {
             })
         })
     }
-    sendUpdatedDepthAt(price:string,market:string){
+    sendUpdatedDepthAt(price: string, market: string) {
         const orderbook = this.orderBooks.find(orderBook => orderBook.ticker() === market);
         if (!orderbook) {
             return;
         }
         const depth = orderbook.getDepth();
-        const updatedBids=depth.bids.filter(x=>x[0]===price);
-        const updatedAsks=depth.asks.filter(x=>x[0]===price);
+        const updatedBids = depth.bids.filter(x => x[0] === price);
+        const updatedAsks = depth.asks.filter(x => x[0] === price);
         RedisManager.getInstance().publishMessageForWs(`depth_${market}`, {
             stream: `depth_${market}`,
             data: {
-                asks: updatedAsks.length?updatedAsks:[[price,"0"]],
-                bids: updatedBids.length?updatedBids:[[price,"0"]],
+                asks: updatedAsks.length ? updatedAsks : [[price, "0"]],
+                bids: updatedBids.length ? updatedBids : [[price, "0"]],
                 e: "depth"
             }
         })

@@ -7,6 +7,12 @@ export const GET_OPEN_ORDERS = "GET_OPEN_ORDERS";
 export const GET_DEPTH = "GET_DEPTH";
 
 export type toAPI = {
+    type:"DEPTH",
+    payload:{
+        bids:[string,string][],
+        asks:[string,string][]
+    }
+} | {
     type: "ORDER_PLACED",
     payload: {
         orderId: string,

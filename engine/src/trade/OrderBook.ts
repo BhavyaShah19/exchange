@@ -168,4 +168,9 @@ export class OrderBook {
         this.asks.splice(index,1);
         return order.price;
     }
+    openOrders(userId:string):Order[]{
+        const bids=this.bids.filter(x=>x.userId===userId);
+        const asks=this.asks.filter(x=>x.userId===userId);
+        return [...bids,...asks];
+    }
 }
