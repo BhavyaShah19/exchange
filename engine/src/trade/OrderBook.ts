@@ -152,5 +152,20 @@ export class OrderBook {
         }
         return {bids,asks};
     }
-
+    cancelBid(order:Order){
+        const index=this.bids.findIndex(bid=>bid.orderId===order.orderId);
+        if(index===-1){
+            throw new Error("Order not found");
+        }
+        this.bids.splice(index,1);
+        return order.price;
+    }
+    cancelAsk(order:Order){
+        const index=this.asks.findIndex(ask=>ask.orderId===order.orderId);
+        if(index===-1){
+            throw new Error("Order not found");
+        }
+        this.asks.splice(index,1);
+        return order.price;
+    }
 }
