@@ -1,3 +1,4 @@
+"use client"
 import { getDepth, getTicker, getTrades } from "@/utils/httpClient"
 import { useEffect, useState } from "react"
 import {Asks} from "./Asks"
@@ -10,9 +11,28 @@ export default function DepthPage({market}:{market:string}) {
     const [bids, setBids] = useState<[string, string][]>([])
     const [price, setPrice] = useState<string>() 
     useEffect(() => {
+        console.log("Setting up depth callback for market:", market);
         SignalingManager.getInstance().registerCallback("depth", (data: any) => {
+            console.log("Raw data received in depth callback:", data);
+            console.log("Data type:", typeof data);
+            console.log("Data structure:", JSON.stringify(data, null, 2));
+            
+            if (!data) {
+                console.warn("Received undefined data in depth callback");
+                return;
+            }
             
             setBids((originalBids) => {
+                console.log("Original bids:", originalBids);
+                console.log("New bids data:", data.bids);
+                if (data?.bids === undefined) {
+                    console.log("No bids in data thus returning");
+                    return originalBids || [];
+                }
+                if (data.bids.length === 0) {
+                    console.log("Empty bids array received");
+                    return [];
+                }
                 const bidsAfterUpdate = [...(originalBids || [])];
 
                 for (let i = 0; i < bidsAfterUpdate.length; i++) {
@@ -26,10 +46,27 @@ export default function DepthPage({market}:{market:string}) {
                         }
                     }
                 }
+                for (let j = 0; j < data.bids.length; j++)  {
+                    if (Number(data.bids[j][1]) !== 0 && !bidsAfterUpdate.map(x => x[0]).includes(data.bids[j][0])) {
+                        bidsAfterUpdate.push(data.bids[j]);
+                        break;
+                    }
+                }
+                bidsAfterUpdate.sort((x, y) => Number(y[0]) > Number(x[0]) ? -1 : 1);
                 return bidsAfterUpdate; 
             });
 
             setAsks((originalAsks) => {
+                console.log("Original asks:", originalAsks);
+                console.log("New asks data:", data.asks);
+                if (data?.asks === undefined) {
+                    console.log("No asks in data");
+                    return originalAsks || [];
+                }
+                if (data.asks.length === 0) {
+                    console.log("Empty asks array received");
+                    return [];
+                }
                 const asksAfterUpdate = [...(originalAsks || [])];
 
                 for (let i = 0; i < asksAfterUpdate.length; i++) {
@@ -43,31 +80,43 @@ export default function DepthPage({market}:{market:string}) {
                         }
                     }
                 }
+                for (let j = 0; j < data.asks.length; j++)  {
+                    if (Number(data.asks[j][1]) !== 0 && !asksAfterUpdate.map(x => x[0]).includes(data.asks[j][0])) {
+                        asksAfterUpdate.push(data.asks[j]);
+                        break;
+                    }
+                }
+                asksAfterUpdate.sort((x, y) => Number(y[0]) > Number(x[0]) ? 1 : -1);
                 return asksAfterUpdate; 
             });
         }, `DEPTH-${market}`);
-        SignalingManager.getInstance().sendMessage({"method":"SUBSCRIBE","params":[`depth.200ms.${market}`]})
+        
+        console.log("Sending subscribe message for market:", market);
+        SignalingManager.getInstance().sendMessage({
+            "method": "SUBSCRIBE",
+            "params": [`depth_${market}`]
+        });
+        
+        getDepth(market).then(d => {    
+            setBids(d.bids.reverse());
+            setAsks(d.asks);
+        });
+        
+        getTicker(market).then(t => setPrice(t.lastPrice));
+        getTrades(market).then(t => setPrice(t[0].price));
         return () => {
             SignalingManager.getInstance().deRegisterCallback("depth",`DEPTH-${market}`)
-            SignalingManager.getInstance().sendMessage({"method":"UNSUBSCRIBE","params":[`depth.200ms.${market}`]})
+            SignalingManager.getInstance().sendMessage({"method":"UNSUBSCRIBE","params":[`depth_${market}`]})
         }
-        // getDepth(market).then(d=>{
-        //     setAsks(d.asks)
-        //     setBids(d.bids)
-        // })
-        // getTicker(market).then(t=>setPrice(t.lastPrice))
-        // getTrades(market).then(t=>{setPrice(t[0].price)})
-    
-    }, [])
+    }, [market])
     
     return (
         <div>
             {/* I have to render asks and bids logic here as a different component */}
             <TableHeader />
-            <Asks asks={asks} />
+            {asks && <Asks asks={asks} />}
             {price && <div>{price}</div>}
-
-            <Bids bids={bids} />
+            {bids && <Bids bids={bids} />}
         </div>
     )
 }

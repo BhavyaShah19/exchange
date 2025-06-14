@@ -12,6 +12,7 @@ export class User {
     }
     private addListeners(){
         this.ws.on("message",(message:string)=>{
+            console.log("Message came from user",message)
             const parsedMessage:IncomingMessage=JSON.parse(message);
             if(parsedMessage.method===SUBSCRIBE){
                 parsedMessage.params.forEach(s=>SubscriptionsManager.getInstance().subscribe(this.id,s));
@@ -23,5 +24,6 @@ export class User {
     }
     emit(message:OutgoingMessage){
         this.ws.send(JSON.stringify(message));
+        console.log("emitted the message from emit",message)
     }
 }

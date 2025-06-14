@@ -1,8 +1,10 @@
+'use client'
 import { useParams } from "next/navigation"
-import DepthPage from "../../depth/Depth"
-import MarketBar from "../../MarketBar"
-import TradeView from "../../TradeView"
-import SwapUI from "../../SwapUI"
+import DepthPage from "../../components/depth/Depth"
+import MarketBar from "../../components/MarketBar"
+import {TradeView} from "../../components/TradeView"
+import {SwapUI} from "../../components/SwapUI"
+
 
 export default function TradePage() {
     const {market}=useParams()

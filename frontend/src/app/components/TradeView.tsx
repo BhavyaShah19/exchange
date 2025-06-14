@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
-import { getKlines } from "@/utils/httpClient"; 
-import { Kline } from "@/utils/types";
-import { ChartManager } from "@/utils/ChartManager";
+// import { getKlines } from "@src/utils/httpClient"; 
+import { getKlines } from "@/utils/httpClient";
 
+import { Kline } from "@/utils/types";
+// import { ChartManager } from "@src/utils/ChartManager";
+import { ChartManager } from "@/utils/ChartManager";
 export function TradeView({
   market,
 }: {

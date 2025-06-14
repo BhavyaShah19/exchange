@@ -13,19 +13,23 @@ export interface Fill {
     otherUserId: string;
     marketOrderId: string
 }
+
+
+export const BASE_CURRENCY="INR";
+
 export class OrderBook {
     // what can order book contain suggest me
     // market,bids,asks,price,quantity,side new OrderBook(bids,asks,baseAsse)
     bids: Order[];
     asks: Order[];
+    quoteAsset: string = BASE_CURRENCY;
     baseAsset: string;
-    quoteAsset: string;
-    lastTradeId: number;
-    currentPrice: number;
+    lastTradeId: number ;
+    currentPrice: number ;
     
-    constructor(baseAsset: string, quoteAsset: string, bids: Order[], asks: Order[], lastTradeId: number, currentPrice: number) {
+    constructor(baseAsset: string,  bids: Order[], asks: Order[], lastTradeId: number, currentPrice: number) {
         this.baseAsset = baseAsset;
-        this.quoteAsset = quoteAsset;
+       
         this.bids = bids;
         this.asks = asks;
         this.lastTradeId = lastTradeId || 0;

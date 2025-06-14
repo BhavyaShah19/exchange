@@ -6,6 +6,8 @@ import { fromAPI } from "../types/fromAPI";
 import { CANCEL_ORDER, CREATE_ORDER, GET_DEPTH, GET_OPEN_ORDERS } from "../types/toAPI";
 import { Order, OrderBook, Fill } from "./OrderBook";
 
+export const BASE_CURRENCY="INR";
+
 interface UserBalance {
     [key: string]: {
         available: number,
@@ -16,7 +18,8 @@ export class Engine {
     private Balance: Map<string, UserBalance> = new Map();
     private orderBooks: OrderBook[] = [];
     constructor() {
-
+        this.orderBooks=[new OrderBook("TATA",[],[],0,0)] 
+        this.setBalances()
     }
     public process({ message, clientId }: {
         message: fromAPI,
@@ -202,11 +205,16 @@ export class Engine {
         if (side === "buy") {
             fills.forEach(fill => {
                 // @ts-ignore
+                console.log("Earlier balance for the otheruser"+fill.otherUserId+" is:"+(this.Balance.get(fill.otherUserId)[quoteAsset].available))
+                // @ts-ignore
                 this.Balance.get(fill.otherUserId)[quoteAsset].available += Number(fill.quantity) * Number(fill.price);
                 // @ts-ignore
+                console.log("after buying balance for the otheruser"+fill.otherUserId+" is:"+(this.Balance.get(fill.otherUserId)[quoteAsset].available))
+
+                // @ts-ignore
                 this.Balance?.get(userId)?.[quoteAsset].locked -= Number(fill.quantity) * Number(fill.price);
-
-
+                
+                
                 // @ts-ignore
                 this.Balance.get(fill.otherUserId)[baseAsset].locked -= Number(fill.quantity);
                 // @ts-ignore
@@ -279,7 +287,10 @@ export class Engine {
         const depth = orderbook.getDepth();
         if (side == 'buy') {
             const updatedAsks = depth?.asks.filter(x => fills.map(y => y.price).includes(x[0].toString()));
+            console.log("publish ws depth asks ",updatedAsks)
+            console.log("publish ws depth original bids ",depth.bids)
             const updatedBids = depth?.bids.find(x => x[0] === price);
+            console.log("publish ws depth bids ",updatedBids)
             RedisManager.getInstance().publishMessageForWs(`depth_${market}`, {
                 stream: `depth_${market}`,
                 data: {
@@ -292,6 +303,8 @@ export class Engine {
         if (side == 'sell') {
             const updatedBids = depth?.bids.filter(x => fills.map(f => f.price).includes(x[0].toString()));
             const updatedAsks = depth?.asks.find(x => x[0] === price);
+
+            console.log("publish ws depth updates")
             RedisManager.getInstance().publishMessageForWs(`depth_${market}`, {
                 stream: `depth_${market}`,
                 data: {
@@ -337,5 +350,37 @@ export class Engine {
                 e: "depth"
             }
         })
+    }
+    setBalances(){
+        this.Balance.set("1",{
+            [BASE_CURRENCY]:{
+                available:1000000,
+                locked:0
+            },
+            ["TATA"]:{
+                available:5,
+                locked:0
+            }
+        });
+        this.Balance.set("2",{
+            [BASE_CURRENCY]:{
+                available:2000000,
+                locked:0
+            },
+            ["TATA"]:{
+                available:10,
+                locked:0
+            }
+        })
+        this.Balance.set("5", {
+            [BASE_CURRENCY]: {
+                available: 10000000,
+                locked: 0
+            },
+            "TATA": {
+                available: 10000000,
+                locked: 0
+            }
+        });
     }
 }

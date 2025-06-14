@@ -6,6 +6,7 @@ export type DepthUpdate={
         e:"depth",
     }
 }
+export type TradeAddedMessage={
     stream:string,
     data:{
         e:"trade",//event type
@@ -14,10 +15,9 @@ export type DepthUpdate={
         t:number//tradeId
         s:string,//symbol
         m:boolean,//isBuyerMaker 
-    }export type TradeAddedMessage={
+    }
 
 }
-
 
 export type wsMessage=DepthUpdate | TradeAddedMessage;
 

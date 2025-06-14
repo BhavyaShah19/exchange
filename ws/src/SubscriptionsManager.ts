@@ -18,13 +18,19 @@ export class SubscriptionsManager{
         return this.instance;
     }
     public subscribe(userId:string,channel:string){
-        if(!this.subscriptions.get(userId)?.includes(channel)){
+        if(this.subscriptions.get(userId)?.includes(channel)){
             return
         }
         this.subscriptions.set(userId,(this.subscriptions.get(userId)??[]).concat(channel));
         this.reverseSubscriptions.set(channel,(this.reverseSubscriptions.get(channel)??[]).concat(userId));
+        // console.log("insisde reverse",this.reverseSubscriptions)
         if(this.reverseSubscriptions.get(channel)?.length===1){
-            this.redisClient.subscribe(channel,this.redisCallbackHandler)//second argument here is k what to do after getting message on this channel and its arguments are defined already in redis documentation
+            this.redisClient.subscribe(channel, (message: string, channel: string) => {
+                const parsedMessage = JSON.parse(message);
+                this.reverseSubscriptions.get(channel)?.forEach(userId =>
+                    UserManager.getInstance().getUser(userId)?.emit(parsedMessage)
+                );
+            });
         }
     }
     public unSubscribe(userId:string,channel:string){
@@ -40,12 +46,6 @@ export class SubscriptionsManager{
                 this.redisClient.unsubscribe(channel);
             }
         }
-    }
-    redisCallbackHandler(message:string,channel:string){
-        const parsedMessage=JSON.parse(message);
-        this.reverseSubscriptions.get(channel)?.forEach(userId=>
-            UserManager.getInstance().getUser(userId)?.emit(parsedMessage)
-        )
     }
     public userLeft(userId:string){
         this.subscriptions.get(userId)?.forEach(channel=>this.unSubscribe(userId,channel)); 

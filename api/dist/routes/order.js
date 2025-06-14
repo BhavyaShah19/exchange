@@ -15,7 +15,11 @@ const RedisManager_1 = require("../RedisManager");
 const types_1 = require("../types");
 exports.orderBook = (0, express_1.Router)();
 exports.orderBook.post("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { market, quantity, price, side, userId } = req.body();
+    console.log("Full request body:", req.body);
+    console.log("Request headers:", req.headers);
+    console.log("Content-Type:", req.headers['content-type']);
+    const { market, quantity, price, side, userId } = req.body;
+    console.log("Destructured values:", { market, quantity, price, side, userId });
     const response = yield RedisManager_1.RedisManager.getInstance().sendAndAwait({
         type: types_1.CREATE_ORDER,
         data: {
@@ -29,8 +33,7 @@ exports.orderBook.post("/", (req, res) => __awaiter(void 0, void 0, void 0, func
     res.send(response.payload);
 }));
 exports.orderBook.delete("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    // const { orderId} = req.params;
-    const { market, orderId } = req.body();
+    const { market, orderId } = req.body;
     const response = yield RedisManager_1.RedisManager.getInstance().sendAndAwait({
         type: types_1.CANCEL_ORDER,
         data: {
