@@ -1,4 +1,4 @@
-import { Ticker } from './types';
+import { Ticker, Trade } from './types';
 // To create singleton class
 
 export const BASE_URL = "ws://localhost:3001"
@@ -32,15 +32,25 @@ export class SignalingManager {
                 console.log("Raw WebSocket message:", event.data);
                 const message = JSON.parse(event.data);
                 console.log("Parsed WebSocket message:", message);
-                
+
                 const type = message.data?.e;
                 console.log("Message type:", type);
                 console.log("Available callbacks:", Object.keys(this.callbacks));
-                
+
                 if (this.callbacks[type]) {
                     console.log(`Found ${this.callbacks[type].length} callbacks for type ${type}`);
                     this.callbacks[type].forEach(({ callback, id }) => {
                         console.log(`Executing callback for id: ${id}`);
+                        if (type === "trade") {
+                            const newTrade: Partial<Trade> = {
+                                id:message.data.i,
+                                price: message.data.p,
+                                quantity: message.data.q,
+                                timestamp: message.data.t,
+                                isBuyerMaker: message.data.m,   
+                            }
+                            callback(newTrade)
+                        }
                         if (type === "ticker") {
                             const newTicker: Partial<Ticker> = {
                                 lastPrice: message.data.c,
@@ -52,13 +62,13 @@ export class SignalingManager {
                             }
                             callback(newTicker)
                         }
-                        if(type === "depth"){
+                        if (type === "depth") {
                             console.log("Processing depth update:", message.data);
                             const updatedBids = message.data.bids;
                             const updatedAsks = message.data.asks;
                             console.log("Depth data - Bids:", updatedBids);
                             console.log("Depth data - Asks:", updatedAsks);
-                            
+
                             callback({
                                 bids: updatedBids,
                                 asks: updatedAsks,

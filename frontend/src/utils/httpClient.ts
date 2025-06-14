@@ -13,7 +13,7 @@ export async function getTicker(market:string) {
 
 export async function getTickers():Promise<Ticker[]> {
     const response = await axios.get(`${BASE_URL}/tickers`)  
-    return response.data();
+    return response.data;
 }
 
 export async function getDepth(market:string) {

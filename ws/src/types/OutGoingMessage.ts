@@ -22,4 +22,19 @@ export type DepthUpdateMessage = {
     }
 }
 
-export type OutgoingMessage = TickerUpdateMessage | DepthUpdateMessage;
+export type TradeAddedMessage={
+    type:"trade",
+    data:{
+        i:number,//id
+        p:string,//price
+        q:string,//quantity
+        t:number//timestamp
+        s:string,//symbol
+        m:boolean,//isBuyerMaker 
+        e:"trade",//event type
+    }
+
+}
+
+
+export type OutgoingMessage = TickerUpdateMessage | DepthUpdateMessage | TradeAddedMessage;

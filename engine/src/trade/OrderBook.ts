@@ -11,7 +11,8 @@ export interface Fill {
     quantity: number;
     tradeId: number
     otherUserId: string;
-    marketOrderId: string
+    marketOrderId: string,
+    timeStamp:number
 }
 
 
@@ -91,7 +92,8 @@ export class OrderBook {
                     quantity: filledQty,
                     tradeId: this.lastTradeId++,
                     otherUserId: this.asks[i].userId,
-                    marketOrderId: this.asks[i].orderId
+                    marketOrderId: this.asks[i].orderId,
+                    timeStamp:Date.now()
                 });
             }
         }
@@ -116,7 +118,8 @@ export class OrderBook {
                     quantity: amountRemaining,
                     tradeId: this.lastTradeId++,
                     otherUserId: this.bids[i].userId,
-                    marketOrderId: this.bids[i].orderId
+                    marketOrderId: this.bids[i].orderId,
+                    timeStamp:Date.now()
                 });
             }
         }

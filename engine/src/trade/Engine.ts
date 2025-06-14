@@ -324,12 +324,13 @@ export class Engine {
             RedisManager.getInstance().publishMessageForWs(`trade@${market}`, {
                 stream: `trade@${market}`,
                 data: {
-                    e: "trade",
+                    i: fill.tradeId.toString(),
                     p: fill.price,
                     q: fill.quantity.toString(),
-                    t: fill.tradeId,
+                    t: fill.timeStamp,
                     s: market,
-                    m: fill.otherUserId !== userId
+                    m: fill.otherUserId !== userId,
+                    e: "trade",
                 }
             })
         })
